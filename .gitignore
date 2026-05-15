@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.cache/
+venv/
+models/*.safetensors
+output/*.wav
+output/*.mp3
+*.log
+.DS_Store
