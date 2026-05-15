@@ -35,8 +35,20 @@ Default launch downloads/uses:
 - `ResembleAI/Dramabox` transformer and audio components
 - `unsloth/gemma-3-12b-it-bnb-4bit` text encoder
 
-To use a local or distilled LTX model later, choose the custom model option in
-`run.bat`, or set:
+`run.bat` option 2 downloads/runs the official LTX-2.3 distilled v1.1 checkpoint
+from `Lightricks/LTX-2.3`:
+
+```bat
+set DRAMABOX_MODEL_PROFILE=ltx-distilled
+set DRAMABOX_MODEL_TYPE=distilled
+```
+
+The installer can pre-download this model too. It uses:
+
+- `ltx-2.3-22b-distilled-1.1.safetensors`
+
+To use a different local or experimental LTX model later, choose the custom
+model option in `run.bat`, or set:
 
 ```bat
 set DRAMABOX_MODEL_PROFILE=custom

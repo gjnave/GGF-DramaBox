@@ -17,6 +17,7 @@ from huggingface_hub import hf_hub_download, snapshot_download
 logger = logging.getLogger(__name__)
 
 DRAMABOX_REPO = "ResembleAI/Dramabox"
+LTX_REPO = "Lightricks/LTX-2.3"
 GEMMA_REPO = "unsloth/gemma-3-12b-it-bnb-4bit"
 
 DEFAULT_CACHE = os.path.join(
@@ -30,6 +31,8 @@ MODEL_FILES = {
     "audio_components": "dramabox-audio-components.safetensors",
     "silence_latent": "assets/silence_latent_frame.pt",
 }
+
+LTX_DISTILLED_FILE = "ltx-2.3-22b-distilled-1.1.safetensors"
 
 
 def _token() -> str | None:
@@ -79,6 +82,22 @@ def get_model_path(name: str, cache_dir: str | None = None) -> str:
     return local_path
 
 
+def get_ltx_distilled_path(cache_dir: str | None = None) -> str:
+    """Download the official LTX-2.3 distilled v1.1 checkpoint."""
+    cache_dir = cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE
+    repo_id = os.environ.get("DRAMABOX_LTX_REPO", LTX_REPO)
+    filename = os.environ.get("DRAMABOX_LTX_DISTILLED_FILE", LTX_DISTILLED_FILE)
+    logger.info("Fetching official LTX distilled checkpoint from %s/%s...", repo_id, filename)
+    local_path = hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        cache_dir=cache_dir,
+        token=_token(),
+    )
+    logger.info("  -> %s", local_path)
+    return local_path
+
+
 def get_gemma_path(cache_dir: str | None = None) -> str:
     """Download or resolve the Gemma text encoder directory."""
     override = _first_env("DRAMABOX_GEMMA_ROOT", "GEMMA_DIR")
@@ -102,7 +121,7 @@ def get_all_paths(cache_dir: str | None = None) -> dict:
     """Resolve all assets needed by TTSServer.
 
     Environment overrides:
-      DRAMABOX_MODEL_PROFILE=dramabox|custom
+      DRAMABOX_MODEL_PROFILE=dramabox|ltx-distilled|custom
       DRAMABOX_TRANSFORMER_PATH=/path/to/audio-only.safetensors
       DRAMABOX_AUDIO_COMPONENTS_PATH=/path/to/full-or-components.safetensors
       DRAMABOX_GEMMA_ROOT=/path/to/gemma
@@ -127,6 +146,19 @@ def get_all_paths(cache_dir: str | None = None) -> dict:
         "profile": profile,
         "model_type": os.environ.get("DRAMABOX_MODEL_TYPE", "dramabox").strip().lower(),
     }
+
+    if profile in {"ltx-distilled", "distilled"}:
+        distilled_path = get_ltx_distilled_path(cache_dir)
+        paths["profile"] = "ltx-distilled"
+        paths["model_type"] = "distilled"
+        # The warm server needs both a transformer checkpoint and the audio
+        # component/full checkpoint. The official distilled file is the full
+        # LTX checkpoint, so use it for both slots.
+        paths["transformer"] = distilled_path
+        paths["audio_components"] = distilled_path
+        paths["silence_latent"] = get_model_path("silence_latent", cache_dir)
+        paths["gemma_root"] = get_gemma_path(cache_dir)
+        return paths
 
     if profile == "custom" or transformer_override or audio_override:
         if not transformer_override or not audio_override:
