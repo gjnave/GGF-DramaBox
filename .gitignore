@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 .cache/
 venv/
+models/
 models/*.safetensors
 output/*.wav
 output/*.mp3

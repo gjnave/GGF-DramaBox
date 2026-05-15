@@ -41,6 +41,10 @@ GGF-DramaBox/
 Set `DRAMABOX_USE_HF_CACHE=1` only if you intentionally want Hugging Face's
 global cache instead of local standalone model files.
 
+The standalone `.bat` installer downloads those files directly. It uses
+`aria2c.exe` from the installer folder or PATH when available; otherwise it
+falls back to `curl -L -o`.
+
 ## Model Switching
 
 Default launch downloads/uses:
@@ -85,8 +89,7 @@ python app.py --port 7862
 For a model-only prefetch:
 
 ```bat
-python install_models.py --profile dramabox
-python install_models.py --profile ltx-distilled
+windows\install-GGF-DramaBox.bat
 ```
 
 ## License
