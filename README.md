@@ -28,6 +28,19 @@ some-folder/
     src/
 ```
 
+The installer downloads model files into:
+
+```text
+GGF-DramaBox/
+  models/
+    dramabox/
+    gemma-3-12b-it-bnb-4bit/
+    ltx-distilled-1.1/   optional
+```
+
+Set `DRAMABOX_USE_HF_CACHE=1` only if you intentionally want Hugging Face's
+global cache instead of local standalone model files.
+
 ## Model Switching
 
 Default launch downloads/uses:
@@ -72,7 +85,8 @@ python app.py --port 7862
 For a model-only prefetch:
 
 ```bat
-python app.py --download-only
+python install_models.py --profile dramabox
+python install_models.py --profile ltx-distilled
 ```
 
 ## License

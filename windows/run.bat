@@ -10,6 +10,7 @@ if not exist "venv\Scripts\activate.bat" (
 )
 
 call venv\Scripts\activate
+set "DRAMABOX_MODEL_DIR=%CD%\models"
 
 echo.
 echo GGF-DramaBox model profile

@@ -365,6 +365,12 @@ def build_app() -> gr.Blocks:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="GGF-DramaBox local app")
     parser.add_argument("--download-only", action="store_true", help="Resolve/download model assets and exit.")
+    parser.add_argument(
+        "--profile",
+        choices=["dramabox", "ltx-distilled", "all"],
+        default=os.environ.get("DRAMABOX_MODEL_PROFILE", "dramabox"),
+        help="Model profile to install when using --download-only.",
+    )
     parser.add_argument("--host", default=os.environ.get("DRAMABOX_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.environ.get("DRAMABOX_PORT", "7862")))
     return parser.parse_args()
@@ -373,7 +379,15 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
     if args.download_only:
-        get_all_paths()
+        original_profile = os.environ.get("DRAMABOX_MODEL_PROFILE")
+        profiles = ["dramabox", "ltx-distilled"] if args.profile == "all" else [args.profile]
+        for profile in profiles:
+            print(f"\nInstalling model profile: {profile}")
+            os.environ["DRAMABOX_MODEL_PROFILE"] = profile
+            os.environ["DRAMABOX_MODEL_TYPE"] = "distilled" if profile == "ltx-distilled" else "dramabox"
+            get_all_paths()
+        if original_profile is not None:
+            os.environ["DRAMABOX_MODEL_PROFILE"] = original_profile
         print("Download/resolve complete.")
         raise SystemExit(0)
 

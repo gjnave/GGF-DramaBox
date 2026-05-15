@@ -29,6 +29,9 @@ if exist "GGF-DramaBox\.git" (
     cd /d "%~dp0GGF-DramaBox"
 )
 
+set "DRAMABOX_MODEL_DIR=%CD%\models"
+set "HF_HUB_ENABLE_HF_TRANSFER=1"
+
 :: Find Python
 set "BASE_PYTHON="
 for /f "usebackq delims=" %%P in (`py -3 -c "import sys; print(sys.executable)" 2^>nul`) do set "BASE_PYTHON=%%P"
@@ -62,11 +65,12 @@ pip install --upgrade "huggingface_hub[hf_xet]>=0.35.0" "hf_xet>=1.1.0" "hf_tran
 pip install -r requirements.txt
 if errorlevel 1 ( echo [ERROR] Python dependency install failed. & pause & exit /b 1 )
 
-:: Download default model assets
-set "HF_HUB_ENABLE_HF_TRANSFER=1"
+:: Download model assets into GGF-DramaBox\models
 echo.
-echo Downloading DramaBox model assets. This is large and can take a while.
-python app.py --download-only
+echo Installing DramaBox model assets into:
+echo   %DRAMABOX_MODEL_DIR%
+echo This is large and can take a while.
+python install_models.py --profile dramabox
 if errorlevel 1 ( echo [ERROR] Download failed. & pause & exit /b 1 )
 
 echo.
@@ -74,19 +78,21 @@ echo Optional: also download the official LTX-2.3 distilled v1.1 checkpoint now.
 echo This is large, but it makes run.bat option 2 ready without pasting paths.
 set /p "INSTALL_DISTILLED=Download LTX distilled too? [y/N]: "
 if /i "%INSTALL_DISTILLED%"=="Y" (
-    set "DRAMABOX_MODEL_PROFILE=ltx-distilled"
-    set "DRAMABOX_MODEL_TYPE=distilled"
-    python app.py --download-only
+    python install_models.py --profile ltx-distilled
     if errorlevel 1 ( echo [ERROR] Distilled download failed. & pause & exit /b 1 )
-    set "DRAMABOX_MODEL_PROFILE=dramabox"
-    set "DRAMABOX_MODEL_TYPE=dramabox"
 )
 
-:: Run
 echo.
-echo Starting GGF-DramaBox on http://127.0.0.1:7862
-start "" "http://127.0.0.1:7862"
-set "DRAMABOX_PORT=7862"
-python app.py --port 7862
+echo Install complete.
+echo Models are installed under:
+echo   %DRAMABOX_MODEL_DIR%
+echo.
+set /p "LAUNCH_NOW=Launch GGF-DramaBox now? [Y/n]: "
+if /i not "%LAUNCH_NOW%"=="N" (
+    echo Starting GGF-DramaBox on http://127.0.0.1:7862
+    start "" "http://127.0.0.1:7862"
+    set "DRAMABOX_PORT=7862"
+    python app.py --port 7862
+)
 
 pause

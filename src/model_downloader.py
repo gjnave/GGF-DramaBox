@@ -16,6 +16,8 @@ from huggingface_hub import hf_hub_download, snapshot_download
 
 logger = logging.getLogger(__name__)
 
+APP_DIR = Path(__file__).resolve().parent.parent
+
 DRAMABOX_REPO = "ResembleAI/Dramabox"
 LTX_REPO = "Lightricks/LTX-2.3"
 GEMMA_REPO = "unsloth/gemma-3-12b-it-bnb-4bit"
@@ -25,6 +27,7 @@ DEFAULT_CACHE = os.path.join(
     ".cache",
     "dramabox",
 )
+DEFAULT_MODEL_DIR = APP_DIR / "models"
 
 MODEL_FILES = {
     "transformer": "dramabox-dit-v1.safetensors",
@@ -61,6 +64,52 @@ def _require_dir(path: str, label: str) -> str:
     return resolved
 
 
+def _model_base_dir() -> Path:
+    return Path(os.environ.get("DRAMABOX_MODEL_DIR", str(DEFAULT_MODEL_DIR))).expanduser()
+
+
+def _use_hf_cache_only() -> bool:
+    return os.environ.get("DRAMABOX_USE_HF_CACHE", "0") == "1"
+
+
+def _download_file(repo_id: str, filename: str, subdir: str, cache_dir: str | None = None) -> str:
+    """Download a Hugging Face file into the local standalone models folder."""
+    if _use_hf_cache_only():
+        return hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            cache_dir=cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE,
+            token=_token(),
+        )
+
+    local_dir = _model_base_dir() / subdir
+    local_dir.mkdir(parents=True, exist_ok=True)
+    return hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        local_dir=str(local_dir),
+        token=_token(),
+    )
+
+
+def _download_snapshot(repo_id: str, subdir: str, cache_dir: str | None = None) -> str:
+    """Download a Hugging Face repository snapshot into the local models folder."""
+    if _use_hf_cache_only():
+        return snapshot_download(
+            repo_id=repo_id,
+            cache_dir=cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE,
+            token=_token(),
+        )
+
+    local_dir = _model_base_dir() / subdir
+    local_dir.mkdir(parents=True, exist_ok=True)
+    return snapshot_download(
+        repo_id=repo_id,
+        local_dir=str(local_dir),
+        token=_token(),
+    )
+
+
 def get_model_path(name: str, cache_dir: str | None = None) -> str:
     """Download one default DramaBox model file and return its local path."""
     cache_dir = cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE
@@ -72,12 +121,7 @@ def get_model_path(name: str, cache_dir: str | None = None) -> str:
     repo_path = os.environ.get(f"DRAMABOX_{name.upper()}_FILE", MODEL_FILES[name])
     logger.info("Fetching %s from %s/%s...", name, repo_id, repo_path)
 
-    local_path = hf_hub_download(
-        repo_id=repo_id,
-        filename=repo_path,
-        cache_dir=cache_dir,
-        token=_token(),
-    )
+    local_path = _download_file(repo_id, repo_path, "dramabox", cache_dir)
     logger.info("  -> %s", local_path)
     return local_path
 
@@ -88,12 +132,7 @@ def get_ltx_distilled_path(cache_dir: str | None = None) -> str:
     repo_id = os.environ.get("DRAMABOX_LTX_REPO", LTX_REPO)
     filename = os.environ.get("DRAMABOX_LTX_DISTILLED_FILE", LTX_DISTILLED_FILE)
     logger.info("Fetching official LTX distilled checkpoint from %s/%s...", repo_id, filename)
-    local_path = hf_hub_download(
-        repo_id=repo_id,
-        filename=filename,
-        cache_dir=cache_dir,
-        token=_token(),
-    )
+    local_path = _download_file(repo_id, filename, "ltx-distilled-1.1", cache_dir)
     logger.info("  -> %s", local_path)
     return local_path
 
@@ -108,11 +147,7 @@ def get_gemma_path(cache_dir: str | None = None) -> str:
     repo_id = os.environ.get("DRAMABOX_GEMMA_REPO", GEMMA_REPO)
     logger.info("Fetching Gemma from %s...", repo_id)
 
-    local_dir = snapshot_download(
-        repo_id=repo_id,
-        cache_dir=cache_dir,
-        token=_token(),
-    )
+    local_dir = _download_snapshot(repo_id, "gemma-3-12b-it-bnb-4bit", cache_dir)
     logger.info("  -> %s", local_dir)
     return local_dir
 
