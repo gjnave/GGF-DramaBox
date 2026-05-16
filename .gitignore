@@ -5,6 +5,7 @@ __pycache__/
 .cache/
 venv/
 models/
+windows/GGF-DramaBox/
 models/*.safetensors
 output/*.wav
 output/*.mp3
