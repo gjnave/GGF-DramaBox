@@ -24,6 +24,16 @@ MODEL_FILES = {
 }
 
 LTX_DISTILLED_FILE = "ltx-2.3-22b-distilled-1.1.safetensors"
+GEMMA_REQUIRED_FILES = (
+    "config.json",
+    "generation_config.json",
+    "model.safetensors.index.json",
+    "preprocessor_config.json",
+    "processor_config.json",
+    "tokenizer.json",
+    "tokenizer.model",
+    "tokenizer_config.json",
+)
 
 
 def _first_env(*names: str) -> str | None:
@@ -64,6 +74,18 @@ def _local_dir(subdir: str, required_file: str) -> str | None:
     if path.is_dir() and (path / required_file).is_file():
         return str(path)
     return None
+
+
+def _missing_required_files(subdir: str, required_files: tuple[str, ...]) -> list[str]:
+    path = _model_base_dir() / subdir
+    if not path.is_dir():
+        return list(required_files)
+    missing: list[str] = []
+    for name in required_files:
+        file_path = path / name
+        if not file_path.is_file() or file_path.stat().st_size <= 0:
+            missing.append(name)
+    return missing
 
 
 def get_model_path(name: str, cache_dir: str | None = None) -> str:
@@ -110,15 +132,16 @@ def get_gemma_path(cache_dir: str | None = None) -> str:
 
     logger.info("Resolving local Gemma model directory...")
 
-    local_dir = _local_dir("gemma-3-12b-it-bnb-4bit", "model.safetensors.index.json")
-    if local_dir:
-        logger.info("  -> %s", local_dir)
-        return local_dir
-
     expected = _model_base_dir() / "gemma-3-12b-it-bnb-4bit"
+    missing = _missing_required_files("gemma-3-12b-it-bnb-4bit", GEMMA_REQUIRED_FILES)
+    if not missing:
+        logger.info("  -> %s", expected)
+        return str(expected)
+
     raise FileNotFoundError(
-        "Gemma is not installed locally. Run install-GGF-DramaBox.bat to "
-        f"download it with aria2c/curl -Lo: {expected}"
+        "Gemma is missing required local files "
+        f"({', '.join(missing)}). Run install-GGF-DramaBox.bat again to finish "
+        f"downloading into: {expected}"
     )
 
 
