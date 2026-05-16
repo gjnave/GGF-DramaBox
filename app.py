@@ -54,10 +54,10 @@ PROMPTS = [
 
 VOICE_DIR = ROOT / "assets" / "voices"
 VOICE_EXAMPLES = [
-    (str(VOICE_DIR / "male_harvey_keitel.mp3"), PROMPTS[0][1]),
-    (str(VOICE_DIR / "female_shadowheart.wav"), PROMPTS[1][1]),
-    (str(VOICE_DIR / "male_old_movie.wav"), PROMPTS[2][1]),
-    (str(VOICE_DIR / "male_petergriffin.wav"), PROMPTS[3][1]),
+    [str(VOICE_DIR / "male_harvey_keitel.mp3"), PROMPTS[0][1]],
+    [str(VOICE_DIR / "female_shadowheart.wav"), PROMPTS[1][1]],
+    [str(VOICE_DIR / "male_old_movie.wav"), PROMPTS[2][1]],
+    [str(VOICE_DIR / "male_petergriffin.wav"), PROMPTS[3][1]],
 ]
 
 MODEL_LOCK = threading.Lock()
