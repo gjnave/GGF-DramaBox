@@ -5,17 +5,21 @@ chcp 65001 >nul
 cd /d "%~dp0"
 set "SCRIPT_DIR=%~dp0"
 
-echo.
-echo Optional: paste a Hugging Face token for private/gated/rate-limited downloads.
-echo Leave blank to skip.
-set /p "HF_TOKEN=HF token (optional): "
-if defined HF_TOKEN (
-    set "HF_TOKEN=%HF_TOKEN%"
-    set "HUGGINGFACE_HUB_TOKEN=%HF_TOKEN%"
-)
-
 IF EXIST "disclaimer.md" ( TYPE "disclaimer.md" & pause )
 IF EXIST "about.nfo" TYPE "about.nfo"
+
+echo.
+echo GGF-DramaBox install menu
+echo   1. DramaBox + Gemma only
+echo   2. DramaBox + Gemma + official LTX-2.3 distilled v1.1
+set /p "INSTALL_CHOICE=Choose install [2]: "
+if "%INSTALL_CHOICE%"=="" set "INSTALL_CHOICE=2"
+
+set "INSTALL_DISTILLED="
+if "%INSTALL_CHOICE%"=="2" set "INSTALL_DISTILLED=1"
+set "HF_TOKEN=%HF_TOKEN%"
+if not defined HF_TOKEN set "HF_TOKEN=%HUGGINGFACE_HUB_TOKEN%"
+if defined HF_TOKEN set "HUGGINGFACE_HUB_TOKEN=%HF_TOKEN%"
 
 set "REPO_DIR="
 if exist "%SCRIPT_DIR%..\app.py" if exist "%SCRIPT_DIR%..\src\" set "REPO_DIR=%SCRIPT_DIR%.."
@@ -141,10 +145,7 @@ if errorlevel 1 goto :download_failed
 call :download "https://huggingface.co/unsloth/gemma-3-12b-it-bnb-4bit/resolve/main/tokenizer_config.json" "%GEMMA_DIR%" "tokenizer_config.json"
 if errorlevel 1 goto :download_failed
 
-echo.
-echo Optional: also download the official LTX-2.3 distilled v1.1 checkpoint now.
-set /p "INSTALL_DISTILLED=Download LTX distilled too? [y/N]: "
-if /i "%INSTALL_DISTILLED%"=="Y" (
+if defined INSTALL_DISTILLED (
     call :download "https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled-1.1.safetensors" "%LTX_DISTILLED_DIR%" "ltx-2.3-22b-distilled-1.1.safetensors" "curl-first"
     if errorlevel 1 goto :download_failed
 )
@@ -153,14 +154,7 @@ echo.
 echo Install complete.
 echo Models are installed under:
 echo   %DRAMABOX_MODEL_DIR%
-echo.
-set /p "LAUNCH_NOW=Launch GGF-DramaBox now? [Y/n]: "
-if /i not "%LAUNCH_NOW%"=="N" (
-    echo Starting GGF-DramaBox on http://127.0.0.1:7862
-    start "" "http://127.0.0.1:7862"
-    set "DRAMABOX_PORT=7862"
-    python app.py --port 7862
-)
+echo Run run.bat when you are ready to launch.
 
 pause
 exit /b 0

@@ -27,12 +27,15 @@ set "CURL_EXE="
 for /f "usebackq delims=" %%C in (`where curl 2^>nul`) do if not defined CURL_EXE set "CURL_EXE=%%C"
 
 echo.
-echo GGF-DramaBox model profile
-echo   1. Default DramaBox from Hugging Face
-echo   2. Official LTX-2.3 distilled v1.1 from Hugging Face
+echo GGF-DramaBox launch menu
+echo   1. Default DramaBox
+echo   2. Official LTX-2.3 distilled v1.1
 echo   3. Custom local LTX / distilled model paths
-set /p "MODEL_CHOICE=Choose profile [1]: "
-if "%MODEL_CHOICE%"=="" set "MODEL_CHOICE=1"
+set /p "MODEL_CHOICE=Choose profile [2]: "
+if "%MODEL_CHOICE%"=="" set "MODEL_CHOICE=2"
+
+set /p "DRAMABOX_PORT=Port [7862]: "
+if "%DRAMABOX_PORT%"=="" set "DRAMABOX_PORT=7862"
 
 if "%MODEL_CHOICE%"=="2" (
     set "DRAMABOX_MODEL_PROFILE=ltx-distilled"
@@ -56,9 +59,6 @@ if "%MODEL_CHOICE%"=="2" (
     set "DRAMABOX_MODEL_PROFILE=dramabox"
     set "DRAMABOX_MODEL_TYPE=dramabox"
 )
-
-set /p "DRAMABOX_PORT=Port [7862]: "
-if "%DRAMABOX_PORT%"=="" set "DRAMABOX_PORT=7862"
 
 where nvidia-smi >nul 2>nul
 if errorlevel 1 (
