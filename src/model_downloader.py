@@ -146,19 +146,19 @@ def get_model_path(name: str, cache_dir: str | None = None) -> str:
 
 
 def get_ltx_distilled_path(cache_dir: str | None = None) -> str:
-    """Download the official LTX-2.3 distilled v1.1 checkpoint."""
-    cache_dir = cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE
-    repo_id = os.environ.get("DRAMABOX_LTX_REPO", LTX_REPO)
+    """Resolve the locally installed official LTX-2.3 distilled v1.1 checkpoint."""
     filename = os.environ.get("DRAMABOX_LTX_DISTILLED_FILE", LTX_DISTILLED_FILE)
-    logger.info("Fetching official LTX distilled checkpoint from %s/%s...", repo_id, filename)
+    logger.info("Resolving local LTX distilled checkpoint %s...", filename)
     local_path = _local_file("ltx-distilled-1.1", filename)
     if local_path:
         logger.info("  -> %s", local_path)
         return local_path
 
-    local_path = _download_file(repo_id, filename, "ltx-distilled-1.1", cache_dir)
-    logger.info("  -> %s", local_path)
-    return local_path
+    expected = _model_base_dir() / "ltx-distilled-1.1" / filename
+    raise FileNotFoundError(
+        "LTX distilled checkpoint is not installed locally. Run run.bat option 2 "
+        f"or install-GGF-DramaBox.bat to download it with curl -Lo: {expected}"
+    )
 
 
 def get_gemma_path(cache_dir: str | None = None) -> str:

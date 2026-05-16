@@ -47,6 +47,8 @@ falls back to `curl -L -o`. If `aria2c` starts but fails on a TLS/network error,
 the same file is retried with `curl -Lo`. The optional LTX distilled checkpoint
 uses `curl -Lo` first because that Hugging Face redirect is more reliable with
 curl on Windows.
+`run.bat` also uses `curl -Lo` for option 2 before the app starts, so the app
+does not fall back to Python's Hugging Face HEAD request for that checkpoint.
 
 ## Model Switching
 
