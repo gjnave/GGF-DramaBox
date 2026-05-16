@@ -44,7 +44,9 @@ global cache instead of local standalone model files.
 The standalone `.bat` installer downloads those files directly. It uses
 `aria2c.exe` from the installer folder or PATH when available; otherwise it
 falls back to `curl -L -o`. If `aria2c` starts but fails on a TLS/network error,
-the same file is retried with `curl -Lo`.
+the same file is retried with `curl -Lo`. The optional LTX distilled checkpoint
+uses `curl -Lo` first because that Hugging Face redirect is more reliable with
+curl on Windows.
 
 ## Model Switching
 

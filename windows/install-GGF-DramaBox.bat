@@ -145,7 +145,7 @@ echo.
 echo Optional: also download the official LTX-2.3 distilled v1.1 checkpoint now.
 set /p "INSTALL_DISTILLED=Download LTX distilled too? [y/N]: "
 if /i "%INSTALL_DISTILLED%"=="Y" (
-    call :download "https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled-1.1.safetensors" "%LTX_DISTILLED_DIR%" "ltx-2.3-22b-distilled-1.1.safetensors"
+    call :download "https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled-1.1.safetensors" "%LTX_DISTILLED_DIR%" "ltx-2.3-22b-distilled-1.1.safetensors" "curl-first"
     if errorlevel 1 goto :download_failed
 )
 
@@ -169,6 +169,7 @@ exit /b 0
 set "URL=%~1"
 set "DEST_DIR=%~2"
 set "DEST_FILE=%~3"
+set "DOWNLOAD_MODE=%~4"
 set "OUT=%DEST_DIR%\%DEST_FILE%"
 if not exist "%DEST_DIR%" mkdir "%DEST_DIR%"
 if exist "%OUT%" (
@@ -178,11 +179,13 @@ if exist "%OUT%" (
     )
 )
 echo [DOWNLOAD] %DEST_FILE%
+if /i "%DOWNLOAD_MODE%"=="curl-first" goto :curl_download
+
 if defined ARIA2C (
     if defined HF_TOKEN (
-        "%ARIA2C%" -c -x 8 -s 8 -k 1M --allow-overwrite=true --auto-file-renaming=false --header="Authorization: Bearer %HF_TOKEN%" -d "%DEST_DIR%" -o "%DEST_FILE%" "%URL%"
+        "%ARIA2C%" --timeout=20 --connect-timeout=20 --max-tries=2 -c -x 4 -s 4 -k 1M --allow-overwrite=true --auto-file-renaming=false --header="Authorization: Bearer %HF_TOKEN%" -d "%DEST_DIR%" -o "%DEST_FILE%" "%URL%"
     ) else (
-        "%ARIA2C%" -c -x 8 -s 8 -k 1M --allow-overwrite=true --auto-file-renaming=false -d "%DEST_DIR%" -o "%DEST_FILE%" "%URL%"
+        "%ARIA2C%" --timeout=20 --connect-timeout=20 --max-tries=2 -c -x 4 -s 4 -k 1M --allow-overwrite=true --auto-file-renaming=false -d "%DEST_DIR%" -o "%DEST_FILE%" "%URL%"
     )
     if errorlevel 1 (
         if defined CURL_EXE (
@@ -195,13 +198,21 @@ if defined ARIA2C (
     )
 )
 
+:curl_download
 if defined CURL_EXE (
+    echo [DOWNLOAD] curl -Lo %OUT%
     if defined HF_TOKEN (
-        "%CURL_EXE%" --fail --retry 5 --retry-delay 2 -H "Authorization: Bearer %HF_TOKEN%" -Lo "%OUT%" "%URL%"
+        "%CURL_EXE%" -Lo "%OUT%" --fail --retry 8 --retry-delay 3 --retry-all-errors --connect-timeout 30 -H "Authorization: Bearer %HF_TOKEN%" "%URL%"
     ) else (
-        "%CURL_EXE%" --fail --retry 5 --retry-delay 2 -Lo "%OUT%" "%URL%"
+        "%CURL_EXE%" -Lo "%OUT%" --fail --retry 8 --retry-delay 3 --retry-all-errors --connect-timeout 30 "%URL%"
     )
+    goto :curl_done
 )
+
+echo [ERROR] curl.exe was not found.
+exit /b 1
+
+:curl_done
 if errorlevel 1 exit /b 1
 
 :download_verify
