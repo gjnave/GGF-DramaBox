@@ -4,9 +4,6 @@ chcp 65001 >nul
 
 cd /d "%~dp0"
 
-IF EXIST "disclaimer.md" ( TYPE "disclaimer.md" & pause )
-IF EXIST "about.nfo" TYPE "about.nfo"
-
 echo.
 echo Optional: paste a Hugging Face token for private/gated/rate-limited downloads.
 echo Leave blank to skip.
@@ -15,6 +12,9 @@ if defined HF_TOKEN (
     set "HF_TOKEN=%HF_TOKEN%"
     set "HUGGINGFACE_HUB_TOKEN=%HF_TOKEN%"
 )
+
+IF EXIST "disclaimer.md" ( TYPE "disclaimer.md" & pause )
+IF EXIST "about.nfo" TYPE "about.nfo"
 
 if exist "GGF-DramaBox\.git" (
     echo.
@@ -171,7 +171,18 @@ if defined ARIA2C (
     ) else (
         "%ARIA2C%" -c -x 8 -s 8 -k 1M --allow-overwrite=true --auto-file-renaming=false -d "%DEST_DIR%" -o "%DEST_FILE%" "%URL%"
     )
-) else (
+    if errorlevel 1 (
+        if defined CURL_EXE (
+            echo [WARN] aria2c failed; retrying with curl -Lo...
+        ) else (
+            exit /b 1
+        )
+    ) else (
+        goto :download_verify
+    )
+)
+
+if defined CURL_EXE (
     if defined HF_TOKEN (
         "%CURL_EXE%" --fail --retry 5 --retry-delay 2 -H "Authorization: Bearer %HF_TOKEN%" -Lo "%OUT%" "%URL%"
     ) else (
@@ -179,6 +190,8 @@ if defined ARIA2C (
     )
 )
 if errorlevel 1 exit /b 1
+
+:download_verify
 if not exist "%OUT%" exit /b 1
 for %%F in ("%OUT%") do if %%~zF EQU 0 exit /b 1
 exit /b 0
