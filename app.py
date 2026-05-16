@@ -208,17 +208,153 @@ def apply_prompt(choice: str):
 
 
 CSS = """
-.gradio-container { max-width: 1240px !important; }
-.ggf-hero {
-    border: 1px solid #24324a;
-    background: #111827;
-    color: #f8fafc;
-    padding: 18px 20px;
-    border-radius: 8px;
+:root {
+    --ggf-ink: #14120f;
+    --ggf-muted: #5f594f;
+    --ggf-line: #d8d0c3;
+    --ggf-paper: #fff9ed;
+    --ggf-cream: #f4ead7;
+    --ggf-red: #d83b2a;
+    --ggf-blue: #174c62;
+    --ggf-gold: #d99b2b;
 }
-.ggf-hero h1 { margin: 0 0 6px 0; font-size: 28px; }
-.ggf-hero p { margin: 0; color: #cbd5e1; }
-.ggf-note { color: #94a3b8; font-size: 13px; }
+body, .gradio-container {
+    background:
+        linear-gradient(135deg, rgba(216, 59, 42, 0.08), transparent 34%),
+        linear-gradient(315deg, rgba(23, 76, 98, 0.12), transparent 42%),
+        #fbf6eb !important;
+    color: var(--ggf-ink);
+}
+.gradio-container {
+    max-width: 1240px !important;
+}
+.brand-hero {
+    border: 1px solid rgba(20, 18, 15, 0.12);
+    border-radius: 8px;
+    padding: 28px 30px;
+    background:
+        linear-gradient(120deg, rgba(20, 18, 15, 0.94), rgba(23, 76, 98, 0.9)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 18px);
+    color: #fff8ec;
+    box-shadow: 0 18px 44px rgba(20, 18, 15, 0.16);
+}
+.brand-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.brand-badge {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--ggf-red);
+    color: #fff8ec;
+    font-weight: 900;
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+}
+.brand-hero h1 {
+    margin: 0;
+    font-size: 40px;
+    line-height: 1.02;
+    color: #fff8ec !important;
+}
+.brand-kicker {
+    color: #f5c35d;
+    font-weight: 800;
+    letter-spacing: 0;
+    margin: 0;
+}
+.brand-copy {
+    max-width: 780px;
+    color: #f4ead7;
+    font-size: 17px;
+    margin: 14px 0 12px;
+}
+.brand-links a {
+    color: #ffcf68 !important;
+    font-weight: 700;
+}
+.brand-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+.brand-chip {
+    border: 1px solid rgba(255, 248, 236, 0.22);
+    border-radius: 999px;
+    padding: 6px 10px;
+    color: #fff8ec;
+    background: rgba(255, 248, 236, 0.08);
+    font-size: 13px;
+}
+.action-strip {
+    border: 1px solid var(--ggf-line);
+    border-radius: 8px;
+    padding: 14px;
+    background: rgba(255, 249, 237, 0.82);
+}
+.panel {
+    border: 1px solid var(--ggf-line);
+    border-radius: 8px;
+    padding: 16px;
+    background: rgba(255, 252, 245, 0.9);
+}
+.guide-panel {
+    border: 1px solid #cfc3af;
+    border-radius: 8px;
+    padding: 22px 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.58), rgba(255,255,255,0.2)), var(--ggf-paper);
+}
+.guide-panel h2 {
+    margin-top: 0;
+    color: var(--ggf-blue);
+}
+.guide-panel code {
+    background: #efe1c7;
+    border-radius: 5px;
+    padding: 2px 5px;
+}
+.prompt-note {
+    margin: 8px 0 14px;
+    color: var(--ggf-muted);
+    font-size: 15px;
+    font-style: italic;
+}
+.prompt-heading {
+    margin: 0 0 4px;
+    color: var(--ggf-ink);
+    font-weight: 800;
+}
+.status-box textarea {
+    min-height: 42px !important;
+    max-height: 58px !important;
+    overflow-y: auto !important;
+    font-size: 13px !important;
+}
+.generate-button button, .generate-button, button.primary, .gradio-button.primary {
+    background: linear-gradient(180deg, #e24a38, var(--ggf-red)) !important;
+    border-color: #b92f22 !important;
+    color: #fff8ec !important;
+    font-weight: 900 !important;
+    box-shadow: 0 12px 22px rgba(216, 59, 42, 0.22) !important;
+}
+.utility-button button, .utility-button {
+    border: 1px solid #cfc3af !important;
+    background: #fffaf0 !important;
+    color: var(--ggf-ink) !important;
+    font-weight: 800 !important;
+}
+.utility-button button:hover, .utility-button:hover {
+    border-color: var(--ggf-gold) !important;
+}
+.tabs, .tab-nav, .gradio-tabs {
+    border-color: var(--ggf-line) !important;
+}
 """
 
 
@@ -230,44 +366,66 @@ def build_app() -> gr.Blocks:
 
     with gr.Blocks(
         title="GGF-DramaBox",
-        theme=gr.themes.Soft(primary_hue="blue", neutral_hue="slate"),
+        theme=gr.themes.Soft(primary_hue="red", neutral_hue="stone"),
         css=CSS,
         analytics_enabled=False,
     ) as app:
         gr.HTML(
-            "<div class='ggf-hero'>"
-            "<h1>GGF-DramaBox</h1>"
-            "<p>Local GPU expressive TTS with voice cloning, warm-server generation, "
-            "and swappable DramaBox/LTX checkpoints.</p>"
+            "<div class='brand-hero'>"
+            "<div class='brand-lockup'><div class='brand-badge'>GGF</div>"
+            "<p class='brand-kicker'>GET GOING FAST</p></div>"
+            "<h1>DramaBox</h1>"
+            "<p class='brand-copy'>Expressive local GPU voice cloning with warm-server generation, "
+            "stage-direction prompting, and fast model switching when you want to try distilled LTX.</p>"
+            "<p class='brand-links'>Built around Resemble AI DramaBox and packaged in the Get Going Fast style.</p>"
+            "<div class='brand-chips'>"
+            "<span class='brand-chip'>NVIDIA GPU workflow</span>"
+            "<span class='brand-chip'>Voice reference support</span>"
+            "<span class='brand-chip'>Local models first</span>"
+            "<span class='brand-chip'>Distilled swap ready</span>"
+            "</div>"
             "</div>"
         )
 
         with gr.Tabs():
             with gr.Tab("Generate"):
-                with gr.Row():
-                    with gr.Column(scale=3):
-                        prompt_choice = gr.Dropdown(
-                            [name for name, _ in PROMPTS],
-                            label="Prompt starter",
-                            value=PROMPTS[0][0],
-                        )
-                        prompt_box = gr.Textbox(
-                            label="Scene prompt",
-                            value=PROMPTS[0][1],
-                            lines=7,
-                            placeholder='A narrator speaks warmly, "Hello from DramaBox."',
-                        )
-                        prompt_choice.change(apply_prompt, inputs=[prompt_choice], outputs=[prompt_box])
-                        audio_ref = gr.Audio(label="Voice reference (optional, 10+ seconds)", type="filepath")
-                        generate_btn = gr.Button("Generate", variant="primary", size="lg")
+                gr.Markdown(
+                    "<p class='prompt-note'>Write the scene like direction plus dialogue. "
+                    "Put spoken words inside quotes, keep actions outside, and use the voice reference when you want tighter character matching.</p>"
+                )
+                with gr.Group(elem_classes=["action-strip"]):
+                    with gr.Row():
+                        with gr.Column(scale=3):
+                            prompt_choice = gr.Dropdown(
+                                [name for name, _ in PROMPTS],
+                                label="Prompt starter",
+                                value=PROMPTS[0][0],
+                            )
+                            prompt_box = gr.Textbox(
+                                label="Scene prompt",
+                                value=PROMPTS[0][1],
+                                lines=7,
+                                placeholder='A narrator speaks warmly, "Hello from DramaBox."',
+                            )
+                            prompt_choice.change(apply_prompt, inputs=[prompt_choice], outputs=[prompt_box])
+                            audio_ref = gr.Audio(label="Voice reference (optional, 10+ seconds)", type="filepath")
+                            generate_btn = gr.Button("Generate", variant="primary", size="lg", elem_classes=["generate-button"])
 
-                    with gr.Column(scale=2):
-                        audio_out = gr.Audio(label="Generated audio", type="filepath")
-                        run_status = gr.Markdown("Ready.")
-                        with gr.Accordion("Model status", open=True):
-                            gr.Markdown(_status_markdown())
+                        with gr.Column(scale=2):
+                            with gr.Group(elem_classes=["panel"]):
+                                audio_out = gr.Audio(label="Generated audio", type="filepath")
+                                run_status = gr.Textbox(
+                                    value="Ready.",
+                                    label="Status",
+                                    interactive=False,
+                                    elem_classes=["status-box"],
+                                )
+                            with gr.Group(elem_classes=["panel"]):
+                                gr.Markdown("### Runtime")
+                                gr.Markdown(_status_markdown())
 
-                with gr.Accordion("Generation controls", open=True):
+                with gr.Group(elem_classes=["panel"]):
+                    gr.Markdown("### Generation Controls")
                     with gr.Row():
                         cfg_scale = gr.Slider(1.0, 10.0, value=defaults["cfg_scale"], step=0.25, label="CFG scale")
                         stg_scale = gr.Slider(0.0, 5.0, value=defaults["stg_scale"], step=0.25, label="STG scale")
@@ -303,61 +461,65 @@ def build_app() -> gr.Blocks:
                     outputs=[audio_out, run_status],
                 )
 
-                gr.Examples(
-                    examples=VOICE_EXAMPLES,
-                    inputs=[audio_ref, prompt_box],
-                    label="Voice + prompt examples",
-                    cache_examples=False,
-                )
+                with gr.Group(elem_classes=["panel"]):
+                    gr.Markdown("### Quick Starts")
+                    gr.Examples(
+                        examples=VOICE_EXAMPLES,
+                        inputs=[audio_ref, prompt_box],
+                        label="Voice + prompt examples",
+                        cache_examples=False,
+                    )
 
             with gr.Tab("Model Switch"):
-                gr.Markdown(
-                    "Switch to a local LTX or distilled checkpoint here. The reload can take a while "
-                    "because the current GPU model is released and the new one is loaded warm."
-                )
-                custom_transformer = gr.Textbox(label="Transformer/audio-only checkpoint path")
-                custom_audio = gr.Textbox(label="Audio components or full checkpoint path")
-                custom_gemma = gr.Textbox(label="Gemma root directory")
-                with gr.Row():
-                    custom_type = gr.Dropdown(
-                        ["dramabox", "distilled", "dev", "auto"],
-                        value="distilled",
-                        label="Model type",
+                with gr.Group(elem_classes=["guide-panel"]):
+                    gr.Markdown(
+                        "## Model Switch\n"
+                        "Swap in a local LTX or distilled checkpoint here. Reloading takes a bit because the current "
+                        "GPU runtime is released before the new one is loaded warm."
                     )
-                    custom_dtype = gr.Dropdown(["bf16", "fp16"], value=os.environ.get("LTX_DTYPE", "bf16"), label="Dtype")
-                    custom_bnb = gr.Checkbox(value=True, label="Gemma bnb 4-bit")
-                reload_btn = gr.Button("Load custom model", variant="primary")
-                switch_status = gr.Markdown(_status_markdown())
-                reload_btn.click(
-                    load_custom_model,
-                    inputs=[
-                        custom_transformer,
-                        custom_audio,
-                        custom_gemma,
-                        custom_type,
-                        custom_dtype,
-                        custom_bnb,
-                    ],
-                    outputs=[
-                        switch_status,
-                        cfg_scale,
-                        stg_scale,
-                        auto_rescale,
-                        rescale_scale,
-                        modality_scale,
-                        steps,
-                    ],
-                )
+                    custom_transformer = gr.Textbox(label="Transformer/audio-only checkpoint path")
+                    custom_audio = gr.Textbox(label="Audio components or full checkpoint path")
+                    custom_gemma = gr.Textbox(label="Gemma root directory")
+                    with gr.Row():
+                        custom_type = gr.Dropdown(
+                            ["dramabox", "distilled", "dev", "auto"],
+                            value="distilled",
+                            label="Model type",
+                        )
+                        custom_dtype = gr.Dropdown(["bf16", "fp16"], value=os.environ.get("LTX_DTYPE", "bf16"), label="Dtype")
+                        custom_bnb = gr.Checkbox(value=True, label="Gemma bnb 4-bit")
+                    reload_btn = gr.Button("Load custom model", variant="primary", elem_classes=["generate-button"])
+                    switch_status = gr.Markdown(_status_markdown())
+                    reload_btn.click(
+                        load_custom_model,
+                        inputs=[
+                            custom_transformer,
+                            custom_audio,
+                            custom_gemma,
+                            custom_type,
+                            custom_dtype,
+                            custom_bnb,
+                        ],
+                        outputs=[
+                            switch_status,
+                            cfg_scale,
+                            stg_scale,
+                            auto_rescale,
+                            rescale_scale,
+                            modality_scale,
+                            steps,
+                        ],
+                    )
 
             with gr.Tab("Prompt Guide"):
-                gr.Markdown(
-                    "Use a speaker description, then put spoken words inside double quotes. "
-                    "Put actions outside quotes.\n\n"
-                    "Good: `A tired detective mutters, \"This case is not over.\" "
-                    "He sighs deeply. \"Not by a long shot.\"`\n\n"
-                    "Inside quotes: dialogue and phonetic sounds like `\"Hahaha\"`, `\"Mmmm\"`, `\"Ugh\"`.\n\n"
-                    "Outside quotes: `She laughs nervously.`, `A long pause.`, `He clears his throat.`"
-                )
+                with gr.Group(elem_classes=["guide-panel"]):
+                    gr.Markdown(
+                        "## Prompt Guide\n"
+                        "Use a speaker description, then put spoken words inside double quotes. Put actions outside quotes.\n\n"
+                        "**Good:** `A tired detective mutters, \"This case is not over.\" He sighs deeply. \"Not by a long shot.\"`\n\n"
+                        "**Inside quotes:** dialogue and phonetic sounds like `\"Hahaha\"`, `\"Mmmm\"`, `\"Ugh\"`.\n\n"
+                        "**Outside quotes:** `She laughs nervously.`, `A long pause.`, `He clears his throat.`"
+                    )
 
     return app
 
