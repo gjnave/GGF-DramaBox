@@ -3,6 +3,7 @@ setlocal enabledelayedexpansion
 chcp 65001 >nul
 
 cd /d "%~dp0"
+set "SCRIPT_DIR=%~dp0"
 
 echo.
 echo Optional: paste a Hugging Face token for private/gated/rate-limited downloads.
@@ -16,17 +17,25 @@ if defined HF_TOKEN (
 IF EXIST "disclaimer.md" ( TYPE "disclaimer.md" & pause )
 IF EXIST "about.nfo" TYPE "about.nfo"
 
-if exist "GGF-DramaBox\.git" (
+set "REPO_DIR="
+if exist "%SCRIPT_DIR%..\app.py" if exist "%SCRIPT_DIR%..\src\" set "REPO_DIR=%SCRIPT_DIR%.."
+
+if defined REPO_DIR (
+    echo.
+    echo Using existing GGF-DramaBox checkout...
+    cd /d "%REPO_DIR%"
+    if exist ".git" git pull
+) else if exist "GGF-DramaBox\.git" (
     echo.
     echo Existing GGF-DramaBox checkout found. Pulling latest...
-    cd /d "%~dp0GGF-DramaBox"
+    cd /d "%SCRIPT_DIR%GGF-DramaBox"
     git pull
 ) else (
     echo.
     echo Cloning GGF-DramaBox...
     git clone https://github.com/gjnave/GGF-DramaBox
     if errorlevel 1 ( echo [ERROR] Git clone failed. & pause & exit /b 1 )
-    cd /d "%~dp0GGF-DramaBox"
+    cd /d "%SCRIPT_DIR%GGF-DramaBox"
 )
 
 set "DRAMABOX_MODEL_DIR=%CD%\models"
@@ -34,8 +43,12 @@ set "DRAMABOX_DIR=%DRAMABOX_MODEL_DIR%\dramabox"
 set "GEMMA_DIR=%DRAMABOX_MODEL_DIR%\gemma-3-12b-it-bnb-4bit"
 set "LTX_DISTILLED_DIR=%DRAMABOX_MODEL_DIR%\ltx-distilled-1.1"
 
-if exist "%~dp0aria2c.exe" (
-    set "ARIA2C=%~dp0aria2c.exe"
+if exist "%SCRIPT_DIR%aria2c.exe" (
+    set "ARIA2C=%SCRIPT_DIR%aria2c.exe"
+) else if exist "%SCRIPT_DIR%..\aria2c.exe" (
+    set "ARIA2C=%SCRIPT_DIR%..\aria2c.exe"
+) else if exist "%SCRIPT_DIR%..\..\aria2c.exe" (
+    set "ARIA2C=%SCRIPT_DIR%..\..\aria2c.exe"
 ) else (
     set "ARIA2C="
     for /f "usebackq delims=" %%A in (`where aria2c 2^>nul`) do if not defined ARIA2C set "ARIA2C=%%A"
