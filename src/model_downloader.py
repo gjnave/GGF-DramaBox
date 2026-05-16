@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Download and resolve DramaBox/LTX model assets.
+"""Resolve locally installed DramaBox/LTX model assets.
 
-The default profile downloads ResembleAI/DramaBox from Hugging Face. For later
-LTX swaps, set the DRAMABOX_* path variables or choose the custom option in
-run.bat. That lets the app boot with a distilled/local checkpoint without
-editing Python files.
+Downloads are handled by the Windows BAT launchers with aria2c/curl. This module
+only points the app at files that are already present under the local models
+folder or explicit DRAMABOX_* path overrides.
 """
 from __future__ import annotations
 
@@ -12,21 +11,10 @@ import logging
 import os
 from pathlib import Path
 
-from huggingface_hub import hf_hub_download, snapshot_download
-
 logger = logging.getLogger(__name__)
 
 APP_DIR = Path(__file__).resolve().parent.parent
 
-DRAMABOX_REPO = "ResembleAI/Dramabox"
-LTX_REPO = "Lightricks/LTX-2.3"
-GEMMA_REPO = "unsloth/gemma-3-12b-it-bnb-4bit"
-
-DEFAULT_CACHE = os.path.join(
-    os.environ.get("HF_HOME", os.path.expanduser("~")),
-    ".cache",
-    "dramabox",
-)
 DEFAULT_MODEL_DIR = APP_DIR / "models"
 
 MODEL_FILES = {
@@ -36,10 +24,6 @@ MODEL_FILES = {
 }
 
 LTX_DISTILLED_FILE = "ltx-2.3-22b-distilled-1.1.safetensors"
-
-
-def _token() -> str | None:
-    return os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
 
 
 def _first_env(*names: str) -> str | None:
@@ -68,10 +52,6 @@ def _model_base_dir() -> Path:
     return Path(os.environ.get("DRAMABOX_MODEL_DIR", str(DEFAULT_MODEL_DIR))).expanduser()
 
 
-def _use_hf_cache_only() -> bool:
-    return os.environ.get("DRAMABOX_USE_HF_CACHE", "0") == "1"
-
-
 def _local_file(subdir: str, filename: str) -> str | None:
     path = _model_base_dir() / subdir / Path(filename)
     if path.is_file() and path.stat().st_size > 0:
@@ -86,63 +66,24 @@ def _local_dir(subdir: str, required_file: str) -> str | None:
     return None
 
 
-def _download_file(repo_id: str, filename: str, subdir: str, cache_dir: str | None = None) -> str:
-    """Download a Hugging Face file into the local standalone models folder."""
-    if _use_hf_cache_only():
-        return hf_hub_download(
-            repo_id=repo_id,
-            filename=filename,
-            cache_dir=cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE,
-            token=_token(),
-        )
-
-    local_dir = _model_base_dir() / subdir
-    local_dir.mkdir(parents=True, exist_ok=True)
-    return hf_hub_download(
-        repo_id=repo_id,
-        filename=filename,
-        local_dir=str(local_dir),
-        token=_token(),
-    )
-
-
-def _download_snapshot(repo_id: str, subdir: str, cache_dir: str | None = None) -> str:
-    """Download a Hugging Face repository snapshot into the local models folder."""
-    if _use_hf_cache_only():
-        return snapshot_download(
-            repo_id=repo_id,
-            cache_dir=cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE,
-            token=_token(),
-        )
-
-    local_dir = _model_base_dir() / subdir
-    local_dir.mkdir(parents=True, exist_ok=True)
-    return snapshot_download(
-        repo_id=repo_id,
-        local_dir=str(local_dir),
-        token=_token(),
-    )
-
-
 def get_model_path(name: str, cache_dir: str | None = None) -> str:
-    """Download one default DramaBox model file and return its local path."""
-    cache_dir = cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE
-
+    """Resolve one locally installed DramaBox model file."""
     if name not in MODEL_FILES:
         raise ValueError(f"Unknown model: {name}. Choose from: {list(MODEL_FILES)}")
 
-    repo_id = os.environ.get("DRAMABOX_HF_REPO", DRAMABOX_REPO)
     repo_path = os.environ.get(f"DRAMABOX_{name.upper()}_FILE", MODEL_FILES[name])
-    logger.info("Fetching %s from %s/%s...", name, repo_id, repo_path)
+    logger.info("Resolving local %s model file %s...", name, repo_path)
 
     local_path = _local_file("dramabox", repo_path)
     if local_path:
         logger.info("  -> %s", local_path)
         return local_path
 
-    local_path = _download_file(repo_id, repo_path, "dramabox", cache_dir)
-    logger.info("  -> %s", local_path)
-    return local_path
+    expected = _model_base_dir() / "dramabox" / Path(repo_path)
+    raise FileNotFoundError(
+        f"{name} is not installed locally. Run install-GGF-DramaBox.bat to "
+        f"download it with aria2c/curl -Lo: {expected}"
+    )
 
 
 def get_ltx_distilled_path(cache_dir: str | None = None) -> str:
@@ -162,23 +103,23 @@ def get_ltx_distilled_path(cache_dir: str | None = None) -> str:
 
 
 def get_gemma_path(cache_dir: str | None = None) -> str:
-    """Download or resolve the Gemma text encoder directory."""
+    """Resolve the locally installed Gemma text encoder directory."""
     override = _first_env("DRAMABOX_GEMMA_ROOT", "GEMMA_DIR")
     if override:
         return _require_dir(override, "Gemma root")
 
-    cache_dir = cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE
-    repo_id = os.environ.get("DRAMABOX_GEMMA_REPO", GEMMA_REPO)
-    logger.info("Fetching Gemma from %s...", repo_id)
+    logger.info("Resolving local Gemma model directory...")
 
     local_dir = _local_dir("gemma-3-12b-it-bnb-4bit", "model.safetensors.index.json")
     if local_dir:
         logger.info("  -> %s", local_dir)
         return local_dir
 
-    local_dir = _download_snapshot(repo_id, "gemma-3-12b-it-bnb-4bit", cache_dir)
-    logger.info("  -> %s", local_dir)
-    return local_dir
+    expected = _model_base_dir() / "gemma-3-12b-it-bnb-4bit"
+    raise FileNotFoundError(
+        "Gemma is not installed locally. Run install-GGF-DramaBox.bat to "
+        f"download it with aria2c/curl -Lo: {expected}"
+    )
 
 
 def get_all_paths(cache_dir: str | None = None) -> dict:
@@ -191,7 +132,6 @@ def get_all_paths(cache_dir: str | None = None) -> dict:
       DRAMABOX_GEMMA_ROOT=/path/to/gemma
       DRAMABOX_MODEL_TYPE=dramabox|dev|distilled|auto
     """
-    cache_dir = cache_dir or os.environ.get("DRAMABOX_CACHE_DIR") or DEFAULT_CACHE
     profile = os.environ.get("DRAMABOX_MODEL_PROFILE", "dramabox").strip().lower()
 
     transformer_override = _first_env(

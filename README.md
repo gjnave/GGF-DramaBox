@@ -49,6 +49,8 @@ uses `curl -Lo` first because that Hugging Face redirect is more reliable with
 curl on Windows.
 `run.bat` also uses `curl -Lo` for option 2 before the app starts, so the app
 does not fall back to Python's Hugging Face HEAD request for that checkpoint.
+The Python runtime only resolves local files; it does not use the Hugging Face
+download API for models.
 
 ## Model Switching
 
