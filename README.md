@@ -38,9 +38,6 @@ GGF-DramaBox/
     ltx-distilled-1.1/   optional
 ```
 
-Set `DRAMABOX_USE_HF_CACHE=1` only if you intentionally want Hugging Face's
-global cache instead of local standalone model files.
-
 The standalone `.bat` installer downloads those files directly. It uses
 `aria2c.exe` from the installer folder or PATH when available; otherwise it
 falls back to `curl -L -o`. If `aria2c` starts but fails on a TLS/network error,
@@ -52,6 +49,9 @@ does not fall back to Python's Hugging Face HEAD request for that checkpoint.
 The Python runtime only resolves local files; it does not use the Hugging Face
 download API for models.
 
+The installer also refreshes the parent-level `run.bat` from the repo copy, so
+rerunning the installer updates the member-facing launcher.
+
 ## Model Switching
 
 Default launch downloads/uses:
@@ -59,7 +59,8 @@ Default launch downloads/uses:
 - `ResembleAI/Dramabox` transformer and audio components
 - `unsloth/gemma-3-12b-it-bnb-4bit` text encoder
 
-`run.bat` option 2 downloads/runs the official LTX-2.3 distilled v1.1 checkpoint
+`run.bat` defaults to the faster DramaBox profile. Option 2 downloads/runs the
+official LTX-2.3 distilled v1.1 checkpoint
 from `Lightricks/LTX-2.3`:
 
 ```bat

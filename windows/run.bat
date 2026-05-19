@@ -31,8 +31,8 @@ echo GGF-DramaBox launch menu
 echo   1. Default DramaBox
 echo   2. Official LTX-2.3 distilled v1.1
 echo   3. Custom local LTX / distilled model paths
-set /p "MODEL_CHOICE=Choose profile [2]: "
-if "%MODEL_CHOICE%"=="" set "MODEL_CHOICE=2"
+set /p "MODEL_CHOICE=Choose profile [1]: "
+if "%MODEL_CHOICE%"=="" set "MODEL_CHOICE=1"
 
 set /p "DRAMABOX_PORT=Port [7862]: "
 if "%DRAMABOX_PORT%"=="" set "DRAMABOX_PORT=7862"

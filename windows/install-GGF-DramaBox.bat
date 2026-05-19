@@ -47,6 +47,10 @@ set "DRAMABOX_DIR=%DRAMABOX_MODEL_DIR%\dramabox"
 set "GEMMA_DIR=%DRAMABOX_MODEL_DIR%\gemma-3-12b-it-bnb-4bit"
 set "LTX_DISTILLED_DIR=%DRAMABOX_MODEL_DIR%\ltx-distilled-1.1"
 
+for %%S in ("%SCRIPT_DIR%.") do set "SCRIPT_ABS=%%~fS"
+for %%W in ("%CD%\windows\.") do set "WINDOWS_ABS=%%~fW"
+if exist "windows\run.bat" if /i not "%SCRIPT_ABS%"=="%WINDOWS_ABS%" copy /Y "windows\run.bat" "%SCRIPT_DIR%run.bat" >nul
+
 if exist "%SCRIPT_DIR%aria2c.exe" (
     set "ARIA2C=%SCRIPT_DIR%aria2c.exe"
 ) else if exist "%SCRIPT_DIR%..\aria2c.exe" (
@@ -167,7 +171,7 @@ set "DOWNLOAD_MODE=%~4"
 set "OUT=%DEST_DIR%\%DEST_FILE%"
 if not exist "%DEST_DIR%" mkdir "%DEST_DIR%"
 if exist "%OUT%" (
-    for %%F in ("%OUT%") do if %%~zF GTR 0 (
+    for %%F in ("%OUT%") do if %%~zF GTR 0 if not exist "%OUT%.aria2" (
         echo [OK] %OUT%
         exit /b 0
     )
