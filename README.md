@@ -87,6 +87,18 @@ The in-app **Model Switch** tab can also reload a local checkpoint without
 editing files. Distilled mode uses the distilled sigma schedule and no guidance
 by default; DramaBox mode uses the expressive guided defaults.
 
+## LoRA Training
+
+The app includes a **LoRA Training** tab that turns your dataset paths and
+training settings into the exact preprocess, train, and test-inference commands.
+It supports manifest JSONL, TSV, `gemini_synthetic`, and `libriheavy` indexes.
+`src/preprocess.py` also writes a training-ready `index.txt` beside the
+preprocessed latents, so manifest and TSV datasets can go straight into
+`src/train.py`.
+
+Keep trained LoRAs separate and load them with `--lora` during inference.
+Pre-merging LoRAs into the checkpoint is not recommended.
+
 ## Direct Run
 
 ```bat

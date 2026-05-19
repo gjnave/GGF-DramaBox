@@ -207,6 +207,121 @@ def apply_prompt(choice: str):
     return PROMPTS[0][1]
 
 
+def _quote_cmd(value: str | Path | int | float) -> str:
+    text = str(value).strip()
+    if not text:
+        return '""'
+    if len(text) >= 2 and text.startswith('"') and text.endswith('"'):
+        text = text[1:-1]
+    text = text.replace('"', r'\"')
+    if any(ch in text for ch in (" ", "&", "(", ")", "[", "]", "{", "}", '"')):
+        return f'"{text}"'
+    return text
+
+
+def build_lora_commands(
+    dataset_type: str,
+    index_path: str,
+    audio_dir: str,
+    preprocessed_dir: str,
+    min_duration: float,
+    max_duration: float,
+    max_samples: int,
+    train_output_dir: str,
+    steps: int,
+    lora_rank: int,
+    lora_alpha: int,
+    lora_dropout: float,
+    learning_rate: float,
+    warmup_steps: int,
+    save_every: int,
+    use_validation: bool,
+    validation_config: str,
+    lora_path: str,
+    voice_sample: str,
+    test_prompt: str,
+    test_output: str,
+):
+    dataset_type = dataset_type or "manifest"
+    preprocessed_dir = preprocessed_dir.strip().strip('"') or str(ROOT / "training_data" / "preprocessed")
+    train_output_dir = train_output_dir.strip().strip('"') or str(ROOT / "training_runs" / "dramabox_lora")
+    validation_config = validation_config.strip().strip('"') or str(ROOT / "configs" / "val_config.example.yaml")
+    lora_path = lora_path.strip().strip('"') or str(Path(train_output_dir) / f"lora_step_{int(save_every):05d}.safetensors")
+    test_output = test_output.strip().strip('"') or str(ROOT / "output" / "lora_test.wav")
+    test_prompt = test_prompt.strip() or 'A woman speaks warmly, "Hello from my trained LoRA."'
+
+    checkpoint = ROOT / "models" / "dramabox" / "dramabox-audio-components.safetensors"
+    audio_only = ROOT / "models" / "dramabox" / "dramabox-dit-v1.safetensors"
+    gemma_root = ROOT / "models" / "gemma-3-12b-it-bnb-4bit"
+    speaker_index = Path(preprocessed_dir) / "index.txt"
+    example_index = "D:\\path\\to\\your_data.jsonl"
+    example_audio_dir = "D:\\path\\to\\wavs"
+    example_voice_sample = "D:\\path\\to\\reference.wav"
+
+    preprocess_parts = [
+        "python src\\preprocess.py",
+        f"--dataset-type {dataset_type}",
+        f"--index {_quote_cmd(index_path or example_index)}",
+        f"--audio-dir {_quote_cmd(audio_dir or example_audio_dir)}",
+        f"--output-dir {_quote_cmd(preprocessed_dir)}",
+        f"--checkpoint {_quote_cmd(checkpoint)}",
+        f"--audio-only-ckpt {_quote_cmd(audio_only)}",
+        f"--gemma-root {_quote_cmd(gemma_root)}",
+        f"--max-duration {float(max_duration):.1f}",
+        f"--min-duration {float(min_duration):.1f}",
+        "--skip-existing",
+    ]
+    if int(max_samples) > 0:
+        preprocess_parts.append(f"--max-samples {int(max_samples)}")
+
+    train_parts = [
+        "accelerate launch src\\train.py",
+        "--config configs\\training_args.example.yaml",
+        f"--data-dir {_quote_cmd(preprocessed_dir)}",
+        f"--speaker-index {_quote_cmd(speaker_index)}",
+        f"--checkpoint {_quote_cmd(audio_only)}",
+        f"--full-checkpoint {_quote_cmd(checkpoint)}",
+        "--base-model dev",
+        f"--output-dir {_quote_cmd(train_output_dir)}",
+        f"--steps {int(steps)}",
+        f"--lr {float(learning_rate):.2e}",
+        f"--warmup-steps {int(warmup_steps)}",
+        f"--save-every {int(save_every)}",
+        f"--lora-rank {int(lora_rank)}",
+        f"--lora-alpha {int(lora_alpha)}",
+        f"--lora-dropout {float(lora_dropout):.2f}",
+    ]
+    if use_validation:
+        train_parts.append(f"--val-config {_quote_cmd(validation_config)}")
+
+    infer_parts = [
+        "python src\\inference.py",
+        f"--checkpoint {_quote_cmd(audio_only)}",
+        f"--full-checkpoint {_quote_cmd(checkpoint)}",
+        f"--gemma-root {_quote_cmd(gemma_root)}",
+        f"--lora {_quote_cmd(lora_path)}",
+        f"--lora-rank {int(lora_rank)}",
+        f"--voice-sample {_quote_cmd(voice_sample or example_voice_sample)}",
+        f"--prompt {_quote_cmd(test_prompt)}",
+        f"--output {_quote_cmd(test_output)}",
+    ]
+
+    def join_parts(parts: list[str]) -> str:
+        return " ^\n  ".join(parts)
+
+    manifest = (
+        '{"audio_filepath": "wavs/spk01_001.wav", "speaker": "spk01", '
+        '"text": "A woman speaks warmly, \\"Hello, how are you today?\\""}\n'
+        '{"audio_filepath": "wavs/spk01_002.wav", "speaker": "spk01", '
+        '"text": "Hello, how are you today?", "duration": 3.8}'
+    )
+    notes = (
+        f"Preprocess writes `{speaker_index}` for training. Keep at least two usable samples per speaker. "
+        "Load the LoRA at inference time with `--lora`; do not pre-merge it into the checkpoint."
+    )
+    return join_parts(preprocess_parts), join_parts(train_parts), join_parts(infer_parts), manifest, notes
+
+
 CSS = """
 :root {
     --ggf-ink: #14120f;
@@ -508,6 +623,128 @@ def build_app() -> gr.Blocks:
                             rescale_scale,
                             modality_scale,
                             steps,
+                        ],
+                    )
+
+            with gr.Tab("LoRA Training"):
+                with gr.Group(elem_classes=["guide-panel"]):
+                    gr.Markdown(
+                        "## Train A DramaBox LoRA\n"
+                        "Fine-tune a speaker, language flavor, or style on top of DramaBox. Prepare paired audio and text, "
+                        "preprocess it into latents, then launch training with Accelerate. Keep the final LoRA separate and "
+                        "load it at inference time."
+                    )
+                    with gr.Row():
+                        with gr.Column(scale=1):
+                            lora_dataset_type = gr.Dropdown(
+                                ["manifest", "tsv", "gemini_synthetic", "libriheavy"],
+                                value="manifest",
+                                label="Index format",
+                            )
+                            lora_index = gr.Textbox(label="Index / manifest path")
+                            lora_audio_dir = gr.Textbox(label="Audio folder")
+                            lora_preprocessed = gr.Textbox(
+                                label="Preprocessed output folder",
+                                value=str(ROOT / "training_data" / "preprocessed"),
+                            )
+                        with gr.Column(scale=1):
+                            lora_min_duration = gr.Number(value=2.0, label="Min seconds")
+                            lora_max_duration = gr.Number(value=20.0, label="Max seconds")
+                            lora_max_samples = gr.Number(value=0, label="Max samples (0 = all)", precision=0)
+                            lora_train_output = gr.Textbox(
+                                label="Training output folder",
+                                value=str(ROOT / "training_runs" / "dramabox_lora"),
+                            )
+
+                    with gr.Row():
+                        lora_steps = gr.Number(value=10000, label="Steps", precision=0)
+                        lora_rank = gr.Number(value=128, label="Rank", precision=0)
+                        lora_alpha = gr.Number(value=128, label="Alpha", precision=0)
+                        lora_dropout = gr.Number(value=0.1, label="Dropout")
+                    with gr.Row():
+                        lora_lr = gr.Number(value=1e-4, label="Learning rate")
+                        lora_warmup = gr.Number(value=500, label="Warmup steps", precision=0)
+                        lora_save_every = gr.Number(value=500, label="Save every", precision=0)
+                        lora_use_val = gr.Checkbox(value=False, label="Run validation at saves")
+                    lora_val_config = gr.Textbox(
+                        label="Validation config",
+                        value=str(ROOT / "configs" / "val_config.example.yaml"),
+                    )
+
+                    with gr.Row():
+                        lora_test_path = gr.Textbox(label="LoRA path to test after training")
+                        lora_voice_sample = gr.Textbox(label="Reference voice sample")
+                    lora_test_prompt = gr.Textbox(
+                        label="Test prompt",
+                        value='A woman speaks warmly, "Hello from my trained LoRA."',
+                        lines=2,
+                    )
+                    lora_test_output = gr.Textbox(
+                        label="Test output WAV",
+                        value=str(ROOT / "output" / "lora_test.wav"),
+                    )
+
+                    lora_build_btn = gr.Button("Build commands", variant="primary", elem_classes=["generate-button"])
+                    lora_notes = gr.Markdown()
+                    lora_manifest_example = gr.Textbox(
+                        label="Manifest JSONL example",
+                        lines=3,
+                        interactive=False,
+                    )
+                    lora_preprocess_cmd = gr.Textbox(
+                        label="1. Preprocess command",
+                        lines=9,
+                        interactive=False,
+                    )
+                    lora_train_cmd = gr.Textbox(
+                        label="2. Train command",
+                        lines=12,
+                        interactive=False,
+                    )
+                    lora_infer_cmd = gr.Textbox(
+                        label="3. Test inference command",
+                        lines=9,
+                        interactive=False,
+                    )
+                    gr.Markdown(
+                        "### Accepted Index Formats\n"
+                        "**Manifest JSONL:** `{\"audio_filepath\": \"wavs/spk01_001.wav\", \"speaker\": \"spk01\", \"text\": \"A woman speaks warmly, \\\"Hello.\\\"\"}`\n\n"
+                        "**TSV:** `wavs/spk01_001.wav<TAB>A woman speaks warmly, \"Hello.\"`\n\n"
+                        "**gemini_synthetic:** `id~speaker~lang~sr~samples~dur~phonemes~text`\n\n"
+                        "**libriheavy:** `id~speaker~lang~samples~dur_ms~phonemes~text`\n\n"
+                        "Use a scene wrapper like `A woman speaks warmly, \"<transcript>\"` when you want the LoRA to learn the same prompted style used at inference."
+                    )
+                    lora_build_btn.click(
+                        build_lora_commands,
+                        inputs=[
+                            lora_dataset_type,
+                            lora_index,
+                            lora_audio_dir,
+                            lora_preprocessed,
+                            lora_min_duration,
+                            lora_max_duration,
+                            lora_max_samples,
+                            lora_train_output,
+                            lora_steps,
+                            lora_rank,
+                            lora_alpha,
+                            lora_dropout,
+                            lora_lr,
+                            lora_warmup,
+                            lora_save_every,
+                            lora_use_val,
+                            lora_val_config,
+                            lora_test_path,
+                            lora_voice_sample,
+                            lora_test_prompt,
+                            lora_test_output,
+                        ],
+                        outputs=[
+                            lora_preprocess_cmd,
+                            lora_train_cmd,
+                            lora_infer_cmd,
+                            lora_manifest_example,
+                            lora_notes,
                         ],
                     )
 

@@ -96,6 +96,10 @@ def parse_gemini_synthetic(index_path: str, audio_dir: str | None) -> list[dict]
 
             samples.append({
                 "id": file_id,
+                "speaker": parts[1],
+                "lang": parts[2],
+                "sr": sr,
+                "num_samples": n_samples,
                 "audio_path": audio_path,
                 "text": text,
                 "duration": duration,
@@ -128,6 +132,10 @@ def parse_libriheavy(index_path: str, audio_dir: str | None) -> list[dict]:
 
             samples.append({
                 "id": file_id,
+                "speaker": parts[1],
+                "lang": parts[2],
+                "sr": 0,
+                "num_samples": n_samples,
                 "audio_path": audio_path,
                 "text": text,
                 "duration": duration,
@@ -144,6 +152,8 @@ def parse_manifest(index_path: str, audio_dir: str | None) -> list[dict]:
             audio_path = entry.get("audio_filepath", entry.get("audio_path", ""))
             text = entry.get("text", entry.get("transcript", ""))
             duration = entry.get("duration", 0.0)
+            speaker = entry.get("speaker", entry.get("speaker_id", "speaker_000"))
+            lang = entry.get("lang", entry.get("language", "en"))
 
             if audio_dir and not os.path.isabs(audio_path):
                 audio_path = os.path.join(audio_dir, audio_path)
@@ -151,6 +161,10 @@ def parse_manifest(index_path: str, audio_dir: str | None) -> list[dict]:
             if os.path.exists(audio_path) and text:
                 samples.append({
                     "id": Path(audio_path).stem,
+                    "speaker": speaker,
+                    "lang": lang,
+                    "sr": 0,
+                    "num_samples": 0,
                     "audio_path": audio_path,
                     "text": text,
                     "duration": duration,
@@ -172,6 +186,10 @@ def parse_tsv(index_path: str, audio_dir: str | None) -> list[dict]:
             if os.path.exists(audio_path):
                 samples.append({
                     "id": Path(audio_path).stem,
+                    "speaker": "speaker_000",
+                    "lang": "en",
+                    "sr": 0,
+                    "num_samples": 0,
                     "audio_path": audio_path,
                     "text": text,
                     "duration": 0.0,
@@ -232,6 +250,26 @@ def main():
         total = len(samples)
         samples = samples[args.shard::args.num_shards]
         logging.info(f"Shard {args.shard}/{args.num_shards}: {len(samples)} samples (of {total} total)")
+
+    train_index_path = out / "index.txt"
+    with open(train_index_path, "w", encoding="utf-8") as f:
+        for sample in samples:
+            f.write(
+                "~".join(
+                    [
+                        str(sample["global_idx"]),
+                        str(sample.get("speaker", "speaker_000")),
+                        str(sample.get("lang", "en")),
+                        str(sample.get("sr", 0)),
+                        str(sample.get("num_samples", 0)),
+                        f"{float(sample.get('duration', 0.0)):.3f}",
+                        "_",
+                        str(sample["text"]).replace("\n", " "),
+                    ]
+                )
+                + "\n"
+            )
+    logging.info(f"Wrote training speaker index: {train_index_path}")
 
     # ── Step 1: Encode text with Gemma (Blocks 1+2 only) ──
     # The trainer runs Block 3 (embeddings processor/connectors) during training,
