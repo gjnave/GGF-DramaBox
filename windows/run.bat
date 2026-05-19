@@ -28,9 +28,9 @@ for /f "usebackq delims=" %%C in (`where curl 2^>nul`) do if not defined CURL_EX
 
 echo.
 echo GGF-DramaBox launch menu
-echo   1. Default DramaBox
-echo   2. Official LTX-2.3 distilled v1.1
-echo   3. Custom local LTX / distilled model paths
+echo   1. Default DramaBox - fastest start, expressive, lower VRAM
+echo   2. LTX-2.3 distilled v1.1 - higher quality option, slower, more VRAM
+echo   3. Custom local model - advanced, bring your own checkpoint
 set /p "MODEL_CHOICE=Choose profile [1]: "
 if "%MODEL_CHOICE%"=="" set "MODEL_CHOICE=1"
 

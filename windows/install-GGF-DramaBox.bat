@@ -10,8 +10,8 @@ IF EXIST "about.nfo" TYPE "about.nfo"
 
 echo.
 echo GGF-DramaBox install menu
-echo   1. DramaBox + Gemma only
-echo   2. DramaBox + Gemma + official LTX-2.3 distilled v1.1
+echo   1. DramaBox + Gemma - smaller install, fastest launch, lower VRAM
+echo   2. DramaBox + Gemma + LTX distilled - recommended, bigger download, more VRAM
 set /p "INSTALL_CHOICE=Choose install [2]: "
 if "%INSTALL_CHOICE%"=="" set "INSTALL_CHOICE=2"
 
@@ -49,7 +49,7 @@ set "LTX_DISTILLED_DIR=%DRAMABOX_MODEL_DIR%\ltx-distilled-1.1"
 
 for %%S in ("%SCRIPT_DIR%.") do set "SCRIPT_ABS=%%~fS"
 for %%W in ("%CD%\windows\.") do set "WINDOWS_ABS=%%~fW"
-if exist "windows\run.bat" if /i not "%SCRIPT_ABS%"=="%WINDOWS_ABS%" copy /Y "windows\run.bat" "%SCRIPT_DIR%run.bat" >nul
+if not exist "%SCRIPT_DIR%run.bat" if exist "windows\run.bat" if /i not "%SCRIPT_ABS%"=="%WINDOWS_ABS%" copy /Y "windows\run.bat" "%SCRIPT_DIR%run.bat" >nul
 
 if exist "%SCRIPT_DIR%aria2c.exe" (
     set "ARIA2C=%SCRIPT_DIR%aria2c.exe"
