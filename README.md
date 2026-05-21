@@ -1,5 +1,6 @@
-# GGF-DramaBox
-
+<img src="/assets/ggf-dramabox.png">
+<div>Downlaod the Full version w/ Installer here: https://dramabox.getgoingfast.pro</div>
+<br>
 GGF-DramaBox is a local Windows/GPU wrapper for
 [Resemble AI DramaBox](https://github.com/resemble-ai/DramaBox), an expressive
 prompt-driven TTS and voice-cloning model built on LTX-2.3 audio.
