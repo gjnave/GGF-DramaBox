@@ -1,6 +1,7 @@
 <img src="/assets/ggf-dramabox.png">
 <div>Downlaod the Full version w/ Installer here: https://dramabox.getgoingfast.pro</div>
 <br>
+<div> THis standalone uses distilled and quant models to assure lower VRAM usage: </div>
 <div>
   <ul>
 <li>hf download unsloth/gemma-3-12b-it-bnb-4bit --local-dir models\gemma-3-12b-it-bnb-4bit</li>
@@ -14,12 +15,6 @@ The app keeps a warm `TTSServer` in GPU memory, exposes a Gradio interface for
 scene prompting, and adds a model switch path for later LTX/distilled
 checkpoint swaps.
 
-## Hardware
-
-- NVIDIA GPU strongly recommended.
-- The default DramaBox stack can peak around 24 GB VRAM.
-- CPU fallback is blocked by default because it is impractically slow. Set
-  `DRAMABOX_ALLOW_CPU=1` only for testing startup behavior.
 
 ## Installed Layout
 
